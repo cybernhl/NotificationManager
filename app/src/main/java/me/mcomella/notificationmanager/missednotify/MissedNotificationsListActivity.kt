@@ -8,17 +8,18 @@ import android.support.v7.widget.RecyclerView
 import android.view.*
 import android.widget.ImageView
 import android.widget.TextView
-import kotlinx.android.synthetic.main.activity_missed_notifications_list.*
 import me.mcomella.notificationmanager.R
+import me.mcomella.notificationmanager.databinding.ActivityMissedNotificationsListBinding
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class MissedNotificationsListActivity : AppCompatActivity() {
-
+    private lateinit var binding: ActivityMissedNotificationsListBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_missed_notifications_list)
+        binding = ActivityMissedNotificationsListBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         supportActionBar!!.title = "Blocked"
     }
 
@@ -28,9 +29,10 @@ class MissedNotificationsListActivity : AppCompatActivity() {
     }
 
     private fun initMissedNotificationsList() {
-        missedNotificationsList.adapter = MissedNotificationsAdapter(this)
-        missedNotificationsList.setHasFixedSize(true)
-        missedNotificationsList.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+        binding.missedNotificationsList.adapter = MissedNotificationsAdapter(this)
+        binding.missedNotificationsList.setHasFixedSize(true)
+        binding.missedNotificationsList.layoutManager =
+            LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -45,6 +47,7 @@ class MissedNotificationsListActivity : AppCompatActivity() {
                 clearNotifications()
                 true
             }
+
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -52,19 +55,24 @@ class MissedNotificationsListActivity : AppCompatActivity() {
     private fun clearNotifications() {
         val diskManager = MissedNotificationsDiskManager(this)
         diskManager.clearAllNotifications()
-        missedNotificationsList.adapter = MissedNotificationsAdapter(this)
+        binding .missedNotificationsList.adapter = MissedNotificationsAdapter(this)
         finish()
     }
 }
 
 private class MissedNotificationsAdapter(context: Context) :
-        RecyclerView.Adapter<MissedNotificationsAdapter.MissedNotificationsViewHolder>() {
+    RecyclerView.Adapter<MissedNotificationsAdapter.MissedNotificationsViewHolder>() {
 
     private val pkgManager = context.packageManager
-    val notifications = MissedNotificationsDiskManager(context).readNotificationsFromDisk().sortedByDescending { it.posttime }
+    val notifications = MissedNotificationsDiskManager(context).readNotificationsFromDisk()
+        .sortedByDescending { it.posttime }
 
-    override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): MissedNotificationsViewHolder {
-        val view = LayoutInflater.from(parent!!.context).inflate(R.layout.missed_notification_list_item, parent, false)
+    override fun onCreateViewHolder(
+        parent: ViewGroup?,
+        viewType: Int
+    ): MissedNotificationsViewHolder {
+        val view = LayoutInflater.from(parent!!.context)
+            .inflate(R.layout.missed_notification_list_item, parent, false)
         return MissedNotificationsViewHolder(view)
     }
 
@@ -87,7 +95,7 @@ private class MissedNotificationsAdapter(context: Context) :
 
     override fun getItemCount() = notifications.size
 
-    private class MissedNotificationsViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    class MissedNotificationsViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val iconView = view.findViewById(R.id.iconView) as ImageView
         val titleView = view.findViewById(R.id.titleView) as TextView
         val subtitleView = view.findViewById(R.id.subtitleView) as TextView

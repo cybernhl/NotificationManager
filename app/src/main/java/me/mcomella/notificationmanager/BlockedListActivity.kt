@@ -1,5 +1,6 @@
 package me.mcomella.notificationmanager
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.graphics.*
@@ -8,17 +9,14 @@ import android.graphics.drawable.Drawable
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.Settings
-import android.support.v7.view.menu.MenuBuilder
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.Toolbar
-import android.util.Log
 import android.view.*
 import android.widget.ImageView
 import android.widget.Switch
 import android.widget.TextView
+import me.mcomella.notificationmanager.databinding.ActivityBlockedListBinding
 
-import kotlinx.android.synthetic.main.activity_blocked_list.*
 import me.mcomella.notificationmanager.ext.use
 import me.mcomella.notificationmanager.missednotify.MissedNotificationsDiskManager
 import me.mcomella.notificationmanager.missednotify.MissedNotificationsListActivity
@@ -30,6 +28,8 @@ val TAG = "NTFY"
 private val DISABLED_ITEM_ALPHA = 0.50f
 
 class BlockedListActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityBlockedListBinding
+
     companion object {
         val KEY_BUNDLE = "bundle"
 
@@ -40,57 +40,59 @@ class BlockedListActivity : AppCompatActivity() {
     var isEmpty = false
         set(isEmpty: Boolean) {
             if (isEmpty) {
-                blockedList.visibility = View.GONE
-                emptyState.visibility = View.VISIBLE
+                binding.blockedList.visibility = View.GONE
+                binding.emptyState.visibility = View.VISIBLE
             } else {
-                blockedList.visibility = View.VISIBLE
-                emptyState.visibility = View.GONE
+                binding.blockedList.visibility = View.VISIBLE
+                binding.emptyState.visibility = View.GONE
             }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_blocked_list)
+        binding = ActivityBlockedListBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         attachClickListeners()
         initToolbar()
     }
 
     private fun attachClickListeners() {
-        addAppButton.setOnClickListener {
-            val blockedApps = (blockedList.adapter as BlockedListAdapter).apps.map { it.pkgname }
+        binding .addAppButton.setOnClickListener {
+            val blockedApps = (binding .blockedList.adapter as BlockedListAdapter).apps.map { it.pkgname }
             val intent = Intent(this, AddAppActivity::class.java)
             intent.putExtra(AddAppActivity.KEY_BLOCKED_APPS, ArrayList(blockedApps))
             startActivityForResult(intent, REQ_CODE_ADD_APP)
         }
 
-        permissionsSettingsButton.setOnClickListener {
+        binding .permissionsSettingsButton.setOnClickListener {
             startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
         }
     }
 
     private fun initToolbar() {
-        setSupportActionBar(toolbar)
-        toolbar.title = "NTFY"
+        setSupportActionBar(binding .toolbar)
+        binding .toolbar.title = "NTFY"
     }
 
     private fun isNotificationListenerPermissionGranted(): Boolean {
-        val grantedPkgs = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+        val grantedPkgs =
+            Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
         return grantedPkgs != null &&
                 grantedPkgs.contains(packageName)
     }
 
     private fun updatePermissionAndEmptyStatePrompt() {
         if (isNotificationListenerPermissionGranted()) {
-            emptyStateTextView.text = "Add apps you want to hide from!"
-            permissionsSettingsButton.visibility = View.GONE
-            emptyStateSubtitleView.visibility = View.GONE
-            addAppButton.visibility = View.VISIBLE
+            binding .emptyStateTextView.text = "Add apps you want to hide from!"
+            binding .permissionsSettingsButton.visibility = View.GONE
+            binding .emptyStateSubtitleView.visibility = View.GONE
+            binding . addAppButton.visibility = View.VISIBLE
             isEmpty = DiskManager(this).readAppsFromDisk().isEmpty()
         } else {
-            emptyStateTextView.text = "Access Notifications"
-            permissionsSettingsButton.visibility = View.VISIBLE
-            emptyStateSubtitleView.visibility = View.VISIBLE
-            addAppButton.visibility = View.GONE
+            binding .emptyStateTextView.text = "Access Notifications"
+            binding .permissionsSettingsButton.visibility = View.VISIBLE
+            binding .emptyStateSubtitleView.visibility = View.VISIBLE
+            binding . addAppButton.visibility = View.GONE
             isEmpty = true // Not actually empty, but this hack works.
         }
     }
@@ -99,7 +101,8 @@ class BlockedListActivity : AppCompatActivity() {
         if (menu == null) return
 
         menu.clear()
-        val blockedNotificationCount = MissedNotificationsDiskManager(this).readNotificationsFromDisk().size
+        val blockedNotificationCount =
+            MissedNotificationsDiskManager(this).readNotificationsFromDisk().size
         if (blockedNotificationCount > 0) {
             val item = menu.add(0, R.id.showMissedNotifications, 0, "Show missed notifications")
             item.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
@@ -111,11 +114,11 @@ class BlockedListActivity : AppCompatActivity() {
         super.onStart()
 
         updatePermissionAndEmptyStatePrompt()
-        updateToolbarMenu(toolbar.menu)
+        updateToolbarMenu(binding .toolbar.menu)
 
-        blockedList.adapter = BlockedListAdapter(this)
-        blockedList.setHasFixedSize(true)
-        blockedList.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+        binding . blockedList.adapter = BlockedListAdapter(this)
+        binding . blockedList.setHasFixedSize(true)
+        binding .blockedList.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         startNotificationService()
     }
 
@@ -149,7 +152,7 @@ class BlockedListActivity : AppCompatActivity() {
     }
 
     private fun refreshAdapter() {
-        blockedList.adapter = BlockedListAdapter(this)
+        binding .blockedList.adapter = BlockedListAdapter(this)
     }
 
     private fun startNotificationService() {
@@ -176,31 +179,47 @@ class BlockedListActivity : AppCompatActivity() {
         val colorAccentPaint = Paint(Paint.ANTI_ALIAS_FLAG)
         colorAccentPaint.color = resources.getColor(R.color.colorAccent, null)
 
-        canvas.drawCircle(canvas.width / 2f, canvas.height / 2f, canvas.width / 2f, colorAccentPaint)
+        canvas.drawCircle(
+            canvas.width / 2f,
+            canvas.height / 2f,
+            canvas.width / 2f,
+            colorAccentPaint
+        )
 
         val textPaint = Paint(Paint.ANTI_ALIAS_FLAG)
         textPaint.color = resources.getColor(R.color.colorPrimary, null)
         textPaint.textSize = resources.getDimensionPixelSize(R.dimen.toolbar_text_size).toFloat()
         // positions: http://stackoverflow.com/a/11121873
         val cntStr = notificationCount.toString()
-        val xPos = canvas.width / 2f - (if (cntStr.length > 1) 2.5f else 1f) * resources.getDimensionPixelSize(R.dimen.toolbar_text_offset)
-        val yPos = canvas.height / 2f - (textPaint.ascent() - textPaint.descent()) / 2f - resources.getDimensionPixelSize(R.dimen.toolbar_text_offset)
+        val xPos =
+            canvas.width / 2f - (if (cntStr.length > 1) 2.5f else 1f) * resources.getDimensionPixelSize(
+                R.dimen.toolbar_text_offset
+            )
+        val yPos =
+            canvas.height / 2f - (textPaint.ascent() - textPaint.descent()) / 2f - resources.getDimensionPixelSize(
+                R.dimen.toolbar_text_offset
+            )
         canvas.drawText(cntStr, xPos, yPos, textPaint)
         return BitmapDrawable(resources, bm)
     }
 
-    override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
+    override fun onCreateContextMenu(
+        menu: ContextMenu?,
+        v: View?,
+        menuInfo: ContextMenu.ContextMenuInfo?
+    ) {
         super.onCreateContextMenu(menu, v, menuInfo)
         menuInflater.inflate(R.menu.blocked_list_context_menu, menu)
     }
 
     override fun onContextItemSelected(item: MenuItem): Boolean {
-        val blockedApp = (blockedList.adapter as BlockedListAdapter).getLongClickedApp()
+        val blockedApp = (binding .blockedList.adapter as BlockedListAdapter).getLongClickedApp()
         return when (item.itemId) {
             R.id.removeApp -> {
                 handleRemoveApp(blockedApp)
                 true
             }
+
             else -> super.onContextItemSelected(item)
         }
     }
@@ -212,12 +231,14 @@ class BlockedListActivity : AppCompatActivity() {
                 startActivity(intent)
                 true
             }
+
             else -> super.onOptionsItemSelected(item)
         }
     }
 }
 
-private class BlockedListAdapter(activity: Activity) : RecyclerView.Adapter<BlockedListAdapter.ApplicationListViewHolder>() {
+private class BlockedListAdapter(activity: Activity) :
+    RecyclerView.Adapter<BlockedListAdapter.ApplicationListViewHolder>() {
     val activityWeakReference = WeakReference(activity)
 
     val pkgManager = activity.packageManager
@@ -233,13 +254,12 @@ private class BlockedListAdapter(activity: Activity) : RecyclerView.Adapter<Bloc
     }
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): ApplicationListViewHolder {
-        val view = LayoutInflater.
-                from(parent!!.context).
-                inflate(R.layout.blocked_list_item, parent, false)
+        val view =
+            LayoutInflater.from(parent!!.context).inflate(R.layout.blocked_list_item, parent, false)
         return ApplicationListViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: ApplicationListViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: ApplicationListViewHolder, @SuppressLint("RecyclerView") position: Int) {
         val app = apps[position]
         val appInfo = pkgManager.getApplicationInfo(app.pkgname, 0)
 
@@ -276,7 +296,7 @@ private class BlockedListAdapter(activity: Activity) : RecyclerView.Adapter<Bloc
 
     fun getLongClickedApp(): BlockedAppInfo = apps[longClickPosition]
 
-    private class ApplicationListViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class ApplicationListViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val rootView = itemView
         val title = itemView!!.findViewById(R.id.title) as TextView
         val subtitleView = itemView.findViewById(R.id.subtitleView)

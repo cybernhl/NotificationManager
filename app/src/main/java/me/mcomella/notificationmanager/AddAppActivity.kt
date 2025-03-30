@@ -5,7 +5,6 @@ import android.app.ProgressDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
-import android.content.pm.PackageManager
 import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
@@ -16,12 +15,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import kotlinx.android.synthetic.main.activity_add_app.*
+import me.mcomella.notificationmanager.databinding.ActivityAddAppBinding
 import me.mcomella.notificationmanager.ext.use
 import java.lang.ref.WeakReference
 import java.util.*
 
 class AddAppActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityAddAppBinding
+
     companion object {
         // args
         val KEY_BLOCKED_APPS = "blockedApps"
@@ -34,16 +35,22 @@ class AddAppActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_add_app)
+        binding = ActivityAddAppBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         supportActionBar!!.setTitle("Add application")
 
-        appList.setHasFixedSize(true)
-        appList.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+        binding.appList.setHasFixedSize(true)
+        binding.appList.layoutManager =
+            LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
     }
 
     override fun onStart() {
         super.onStart()
-        LoadAppsAsyncTask(this, appList).execute(intent.getStringArrayListExtra(KEY_BLOCKED_APPS))
+        LoadAppsAsyncTask(this, binding.appList).execute(
+            intent.getStringArrayListExtra(
+                KEY_BLOCKED_APPS
+            )
+        )
 
         val progressDialog = ProgressDialog(this)
         progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER)
@@ -54,7 +61,7 @@ class AddAppActivity : AppCompatActivity() {
 }
 
 private class LoadAppsAsyncTask(activity: AddAppActivity, appList: RecyclerView) :
-        AsyncTask<List<String>, Void, List<ApplicationInfo>>() {
+    AsyncTask<List<String>, Void, List<ApplicationInfo>>() {
 
     val activityWeakReference = WeakReference(activity)
     val appListWeakReference = WeakReference(appList)
@@ -91,12 +98,17 @@ private class LoadAppsAsyncTask(activity: AddAppActivity, appList: RecyclerView)
     }
 }
 
-private class AddAppAdapter(context: Context, val apps: List<ApplicationInfo>, val onClickListener: (String) -> Unit) :
-        RecyclerView.Adapter<AddAppAdapter.AddAppViewHolder>() {
+private class AddAppAdapter(
+    context: Context,
+    val apps: List<ApplicationInfo>,
+    val onClickListener: (String) -> Unit
+) :
+    RecyclerView.Adapter<AddAppAdapter.AddAppViewHolder>() {
     private val pkgManager = context.packageManager
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): AddAppViewHolder {
-        val view = LayoutInflater.from(parent!!.context).inflate(R.layout.add_app_item, parent, false)
+        val view =
+            LayoutInflater.from(parent!!.context).inflate(R.layout.add_app_item, parent, false)
         return AddAppViewHolder(view)
     }
 
@@ -110,7 +122,7 @@ private class AddAppAdapter(context: Context, val apps: List<ApplicationInfo>, v
 
     override fun getItemCount(): Int = apps.size
 
-    private class AddAppViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    class AddAppViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val rootView = view
         val titleView = view.findViewById(R.id.title) as TextView
         val iconView = view.findViewById(R.id.icon) as ImageView
